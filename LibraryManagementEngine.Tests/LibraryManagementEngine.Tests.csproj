@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="../LibraryManagementEngine/*.cs" />
+    <Compile Include="../*.cs" Exclude="../Program.cs" />
   </ItemGroup>
 
 </Project>
