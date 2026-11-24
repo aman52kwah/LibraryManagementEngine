@@ -60,13 +60,13 @@ namespace LibraryManagementEngine.Tests
         {
             // Arrange
             var book = new Book(new Isbn("978-0123456789"), "Clean Code", "Robert C. Martin", BookGenre.Technology, 2);
-            book.TryBorrowCopy();
+            book.TryBorrowCopy(); // AvailableCopies: 2 -> 1
 
             // Act
-            book.ReturnCopy();
+            book.ReturnCopy();    // AvailableCopies: 1 -> 2
 
             // Assert
-            Assert.Equal(1, book.AvailableCopies);
+            Assert.Equal(2, book.AvailableCopies);
         }
 
         [Fact]
@@ -325,9 +325,10 @@ namespace LibraryManagementEngine.Tests
             // Assert
             Assert.Equal("STU001", record.MemberId);
             Assert.Equal(new Isbn("978-0123456789"), record.BookIsbn);
-            Assert.Equal(DateTime.Now.Date, record.DueDate.Date.AddDays(-15).AddDays(15)); // due ~15 days from now
-            Assert.True(record.DueDate > DateTime.Now);
             Assert.Null(record.ReturnedDate);
+            // Due date should be approximately 15 days from now for a student
+            var expectedDueDate = DateTime.Today.AddDays(15);
+            Assert.Equal(expectedDueDate.Date, record.DueDate.Date);
         }
 
         [Fact]

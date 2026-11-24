@@ -99,22 +99,21 @@ namespace LibraryManagementEngine
         }
 
 
-        public decimal CalculateOverDUeFine(BorrowRecord record)
-        {
-            if (!TryFindMember(record.MemberId, out Member? member))
-            return 0m;
-
-             DateTime effectiveReturnDate = record.ReturnedDate ?? DateTime.Now;
-
-             int overDueDays = (int)Math.Ceiling((effectiveReturnDate - record.DueDate).TotalDays);
-
-             //polymorphic calculationg based on member type fine rate
-             return overDueDays * member.OverdueFinePerDay;
-        }
-
         public decimal CalculateOverDueFine(BorrowRecord record)
         {
-            throw new NotImplementedException();
+            if (!TryFindMember(record.MemberId, out Member? member))
+                return 0m;
+
+            DateTime effectiveReturnDate = record.ReturnedDate ?? DateTime.Now;
+
+            int overDueDays = (int)Math.Ceiling((effectiveReturnDate - record.DueDate).TotalDays);
+
+            // No fine if returned on or before the due date
+            if (overDueDays <= 0)
+                return 0m;
+
+            // Polymorphic calculation based on member type fine rate
+            return overDueDays * member.OverdueFinePerDay;
         }
 
         public IReadOnlyList<Book> GetAllBooks() => _books.Values.ToList().AsReadOnly();
