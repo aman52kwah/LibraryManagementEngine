@@ -18,6 +18,8 @@ namespace LibraryManagementEngine
         BorrowRecord BorrowBook(string memberId, Isbn isbn);
         BorrowRecord ReturnBook(string memberId, Isbn isbn);
         decimal CalculateOverDueFine(BorrowRecord record);
+        IReadOnlyList<Book> GetAllBooks();
+        IReadOnlyList<Member> GetAllMembers();
     }
 
     public class LibraryEngine : ILbraryEngine
@@ -44,7 +46,7 @@ namespace LibraryManagementEngine
         {
             // validation: verify memeber existence safely
             if (!TryFindMember(memberId, out Member? member))
-            throw new KeyNotFoundException($"Book with ISBN '{memberId}' was not found.");
+            throw new KeyNotFoundException($"member with '{memberId}' was not found.");
         
       // Validation: Verify book existence safely
         if (!TryFindBook(isbn, out Book? book))
@@ -114,6 +116,9 @@ namespace LibraryManagementEngine
         {
             throw new NotImplementedException();
         }
+
+        public IReadOnlyList<Book> GetAllBooks() => _books.Values.ToList().AsReadOnly();
+        public IReadOnlyList<Member> GetAllMembers() => _members.Values.ToList().AsReadOnly();
     }
 }
 

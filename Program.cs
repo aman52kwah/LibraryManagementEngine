@@ -1,81 +1,262 @@
 ﻿using System;
-using System.Threading.Tasks.Dataflow;
+
 namespace LibraryManagementEngine
 {
     public class Program
-    
     {
+        private static readonly ILbraryEngine Engine = new LibraryEngine();
 
         public static void Main()
         {
-            Console.WriteLine("========================================================================");
-            Console.WriteLine("             WELCOME TO LIBRABRY MANAGEMENT ENGINE");
-            Console.WriteLine("========================================================================");
+            bool running = true;
+            while (running)
+            {
+                ShowMainMenu();
+                string? choice = Console.ReadLine();
+                Console.WriteLine();
 
+                switch (choice)
+                {
+                    case "1":
+                        RegisterBookMenu();
+                        break;
+                    case "2":
+                        RegisterMemberMenu();
+                        break;
+                    case "3":
+                        BorrowBookMenu();
+                        break;
+                    case "4":
+                        ReturnBookMenu();
+                        break;
+                    case "5":
+                        ListBooksMenu();
+                        break;
+                    case "6":
+                        ListMembersMenu();
+                        break;
+                    case "7":
+                        running = false;
+                        Console.WriteLine("Goodbye!");
+                        break;
+                    default:
+                        Console.WriteLine("Invalid choice. Please enter 1-7.");
+                        break;
+                }
 
-            // initialize Engine and Data Primitives
-            ILbraryEngine engine = new LibraryEngine();
-
-            Isbn cleanCodeIsbn = new("978-012345793");
-            Isbn designPatternIsbn = new("978-0201633610");
-
-            Book book1 = new(cleanCodeIsbn, "Clean Code", "Robert C. Martin", BookGenre.Technology, totalCopies: 2);
-             Book book2 = new(designPatternIsbn, "Design Patterns", "Erich Gamma", BookGenre.Technology, totalCopies: 1);
-
-             // Register Member
-             Member student = new StudentMember("STU001", "Michael Amankwah");
-             Member faculty = new FacultyMember("FAC-001","Clifford Opoku");
-
-             engine.RegisterMember(student);
-             engine.RegisterMember(faculty);
-
-
-             //Borrowing Rules & Due Dates
-             Console.WriteLine("--- Borrowing Operations ---");
-             BorrowRecord rec1 = engine.BorrowBook(student.MemberId, cleanCodeIsbn);
-             Console.WriteLine($"[SUCCESS] {student.Name} borrowed '{book1.Title}' .");
-             Console.WriteLine($".          Due Date: {rec1.DueDate:yyy-MM-dd} ({student.BorrowingPeriodDays} days limit)");
-
-             BorrowRecord rec2 = engine.BorrowBook(faculty.MemberId, designPatternIsbn);
-             Console.WriteLine($"[SUCCESS] {faculty.Name} borrowed '{book2.Title}' .");
-             Console.WriteLine($".          Due Date: {rec2.DueDate:yyy-MM-dd} ({faculty.BorrowingPeriodDays} days limit)");
-
-
-        // test validaytion & copy limits
-        Console.WriteLine(" ---  Validation and Inventory Checks ---");
-        try
-        {
-            Console.WriteLine("Attempting to borrow 'Design Patterns' when 0 copies remain... ");
-            engine.BorrowBook(student.MemberId, designPatternIsbn);
+                if (running)
+                {
+                    Console.WriteLine("\nPress any key to return to the main menu...");
+                    Console.ReadKey(true);
+                    Console.Clear();
+                }
+            }
         }
-        catch (InvalidOperationException ex)
+
+        private static void ShowMainMenu()
         {
-            
-            Console.WriteLine($"[VALIDATION BLOCKED]: {ex.Message}\n");
+            Console.WriteLine("================================================================");
+            Console.WriteLine("              LIBRARY MANAGEMENT SYSTEM");
+            Console.WriteLine("================================================================");
+            Console.WriteLine("1. Register Book");
+            Console.WriteLine("2. Register Member");
+            Console.WriteLine("3. Borrow Book");
+            Console.WriteLine("4. Return Book");
+            Console.WriteLine("5. List All Books");
+            Console.WriteLine("6. List All Members");
+            Console.WriteLine("7. Exit");
+            Console.Write("Select an option: ");
         }
 
-        // Test value value equality of Record Struct ISBNS
-        Console.WriteLine(" --- Value Equality Verification --");
-        Isbn duplicateIsbnSearch = new("978-0132350884");
-        Console.WriteLine($"CleanCodeIsbn == duplicateIsbnSearch: {cleanCodeIsbn == duplicateIsbnSearch}");
-
-        //Return and Fine Calculation
-        Console.WriteLine("\n--- Returns & Overdue Fine Calculations ---");
-        BorrowRecord returnedRec = engine.ReturnBook(student.MemberId, cleanCodeIsbn);
-        Console.WriteLine($"[SUCCESS] {student.Name} returned '{book1.Title}' on {returnedRec.ReturnedDate:yyy-MM-dd HH:MM:SS}.");
-
-
-        //Simulate and overdue record using a 'with' expression for testing
-        BorrowRecord simulatedOverdue = returnedRec with
+        // ------------------------------------------------------------------
+        // Book registration
+        // ------------------------------------------------------------------
+        private static void RegisterBookMenu()
         {
-            DueDate = DateTime.Now.AddDays(-5)
-            
-        };
-        decimal fine = engine.CalculateOverDueFine(simulatedOverdue);
-        Console.WriteLine($"[FINE CALCULATION] Simulated 5 days overdye fine for {student.Name}: ${fine:F2}");
+            Console.WriteLine("--- Register Book ---");
+            string isbn = ReadNonEmptyString("Enter ISBN: ");
+            string title = ReadNonEmptyString("Enter title: ");
+            string author = ReadNonEmptyString("Enter author: ");
+            BookGenre genre = ReadGenre();
+            int totalCopies = ReadPositiveInt("Enter total copies: ");
 
+            try
+            {
+                var book = new Book(new Isbn(isbn), title, author, genre, totalCopies);
+                Engine.RegisterBook(book);
+                Console.WriteLine($"Book '{title}' registered successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // Member registration
+        // ------------------------------------------------------------------
+        private static void RegisterMemberMenu()
+        {
+            Console.WriteLine("--- Register Member ---");
+            string memberId = ReadNonEmptyString("Enter Member ID: ");
+            string name = ReadNonEmptyString("Enter Name: ");
+
+            Console.WriteLine("Select member type:");
+            Console.WriteLine("1. Student (5 books, 15-day period, $0.50/day fine)");
+            Console.WriteLine("2. Faculty (10 books, 30-day period, $0.10/day fine)");
+            Console.Write("Select (1-2): ");
+            string? typeInput = Console.ReadLine();
+
+            Member member = typeInput switch
+            {
+                "1" => new StudentMember(memberId, name),
+                "2" => new FacultyMember(memberId, name),
+                _ => new StudentMember(memberId, name)
+            };
+
+            try
+            {
+                Engine.RegisterMember(member);
+                Console.WriteLine($"Member '{name}' registered successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // Borrow
+        // ------------------------------------------------------------------
+        private static void BorrowBookMenu()
+        {
+            Console.WriteLine("--- Borrow Book ---");
+            string memberId = ReadNonEmptyString("Enter Member ID: ");
+            string isbn = ReadNonEmptyString("Enter ISBN: ");
+
+            try
+            {
+                var record = Engine.BorrowBook(memberId, new Isbn(isbn));
+                Console.WriteLine($"Book borrowed successfully. Due date: {record.DueDate:yyyy-MM-dd}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // Return
+        // ------------------------------------------------------------------
+        private static void ReturnBookMenu()
+        {
+            Console.WriteLine("--- Return Book ---");
+            string memberId = ReadNonEmptyString("Enter Member ID: ");
+            string isbn = ReadNonEmptyString("Enter ISBN: ");
+
+            try
+            {
+                var record = Engine.ReturnBook(memberId, new Isbn(isbn));
+                Console.WriteLine($"Book returned successfully on {record.ReturnedDate:yyyy-MM-dd}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // List books
+        // ------------------------------------------------------------------
+        private static void ListBooksMenu()
+        {
+            Console.WriteLine("--- All Books ---");
+            var books = Engine.GetAllBooks();
+            if (books.Count == 0)
+            {
+                Console.WriteLine("No books registered.");
+                return;
+            }
+            foreach (var book in books)
+            {
+                Console.WriteLine(
+                    $"ISBN: {book.Isbn.Value} | {book.Title} by {book.Author} | " +
+                    $"Genre: {book.Genre} | Copies: {book.AvailableCopies}/{book.TotalCopies}");
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // List members
+        // ------------------------------------------------------------------
+        private static void ListMembersMenu()
+        {
+            Console.WriteLine("--- All Members ---");
+            var members = Engine.GetAllMembers();
+            if (members.Count == 0)
+            {
+                Console.WriteLine("No members registered.");
+                return;
+            }
+            foreach (var member in members)
+            {
+                string type = member.GetType().Name.Replace("Member", "");
+                Console.WriteLine(
+                    $"ID: {member.MemberId} | {member.Name} | Type: {type} | " +
+                    $"Borrowed: {member.BorrowedIsbns.Count}/{member.MaxBooksAllowed}");
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // Input helpers (validation without crashing)
+        // ------------------------------------------------------------------
+        private static string ReadNonEmptyString(string prompt)
+        {
+            while (true)
+            {
+                Console.Write(prompt);
+                string? input = Console.ReadLine();
+                if (!string.IsNullOrWhiteSpace(input))
+                {
+                    return input.Trim();
+                }
+                Console.WriteLine("Input cannot be empty. Please try again.");
+            }
+        }
+
+        private static int ReadPositiveInt(string prompt)
+        {
+            while (true)
+            {
+                Console.Write(prompt);
+                string? input = Console.ReadLine();
+                if (int.TryParse(input, out int value) && value > 0)
+                {
+                    return value;
+                }
+                Console.WriteLine("Please enter a valid positive whole number.");
+            }
+        }
+
+        private static BookGenre ReadGenre()
+        {
+            Console.WriteLine("Select genre:");
+            Console.WriteLine("1. Fiction");
+            Console.WriteLine("2. NonFiction");
+            Console.WriteLine("3. Science");
+            Console.WriteLine("4. History");
+            Console.WriteLine("5. Technology");
+            Console.Write("Select (1-5): ");
+
+            string? input = Console.ReadLine();
+            return input switch
+            {
+                "1" => BookGenre.Fiction,
+                "2" => BookGenre.NonFiction,
+                "3" => BookGenre.Science,
+                "4" => BookGenre.History,
+                "5" => BookGenre.Technology,
+                _ => BookGenre.Fiction
+            };
         }
     }
-
-    
 }
