@@ -56,7 +56,7 @@ namespace LibraryManagementEngine
         private static void ShowMainMenu()
         {
             Console.WriteLine("================================================================");
-            Console.WriteLine("              LIBRARY MANAGEMENT SYSTEM");
+            Console.WriteLine("             WELCOME TO THE  LIBRARY MANAGEMENT SYSTEM");
             Console.WriteLine("================================================================");
             Console.WriteLine("1. Register Book");
             Console.WriteLine("2. Register Member");
