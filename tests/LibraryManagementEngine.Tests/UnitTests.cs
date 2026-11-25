@@ -354,20 +354,20 @@ namespace LibraryManagementEngine.Tests
         }
 
         [Fact]
-        public void BorrowBook_WhenMemberAtLimit_ThrowsInvalidOperationException()
+        public void BorrowBook_WhenValid_UpdatesMemberAndBookState()
         {
             // Arrange
             var engine = CreateEngineWithData();
-            // Student can borrow max 5 books. We only have 2 distinct books but we can borrow same book? No, TryBorrowCopy decrements available.
-            // With 2 copies of book1 and 1 copy of book2 = 3 total available for student.
-            // Let's borrow all 3 available copies
-            engine.BorrowBook("STU001", new Isbn("978-0123456789"));
-            engine.BorrowBook("STU001", new Isbn("978-0123456789")); // second copy
-            engine.BorrowBook("STU001", new Isbn("978-0987654321")); // only copy of book2
+            var isbn = new Isbn("978-0123456789");
 
-            // Act & Assert - no copies left, but student hasn't reached book limit yet.
-            // Instead test reaching MaxBooksAllowed by having many books.
-            // Let's use a fresh engine with many copies.
+            // Act
+            engine.BorrowBook("STU001", isbn);
+
+            // Assert
+            engine.TryFindBook(isbn, out Book? book);
+            engine.TryFindMember("STU001", out Member? member);
+            Assert.Equal(1, book!.AvailableCopies);
+            Assert.Contains(isbn, member!.BorrowedIsbns);
         }
 
         [Fact]
